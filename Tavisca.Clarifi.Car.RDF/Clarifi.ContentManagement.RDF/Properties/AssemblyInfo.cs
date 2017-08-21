@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("Tavisca.Clarifi.Car.RDF")]
+[assembly: AssemblyTitle("Clarifi.ContentManagement.RDF")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Microsoft")]
-[assembly: AssemblyProduct("Tavisca.Clarifi.Car.RDF")]
+[assembly: AssemblyProduct("Clarifi.ContentManagement.RDF")]
 [assembly: AssemblyCopyright("Copyright © Microsoft 2017")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
@@ -20,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("2f0180d7-276c-48ef-a0da-7292df298452")]
+[assembly: Guid("26fa7939-1f42-4810-a878-a519a5ba0ada")]
 
 // Version information for an assembly consists of the following four values:
 //
