@@ -1,0 +1,2 @@
+<http://www.dotnetrdf.org/> <http://example.org/says> "Hello World" .
+<http://www.dotnetrdf.org/> <http://example.org/says> "Bonjour tout le Monde"@fr .
