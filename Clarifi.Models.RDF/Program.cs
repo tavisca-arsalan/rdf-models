@@ -21,13 +21,20 @@ namespace Clarifi.ContentManagement.RDF
             aliases.Add("org");
             aliases.Add("oregan");
 
-            List<Tuple<string, string>> polygon = new List<Tuple<string, string>>();
-            polygon.Add(new Tuple<string, string>("10.10", "11.11"));
-            polygon.Add(new Tuple<string, string>("20.20", "22.22"));
-            generateRDFForCountryMasterData("USA","East Coast","Oregon","Portland","iso1111","iso2222","ENG" ,"http://google.com","http://google.com",DateTime.Now,DateTime.Now,polygon);
+            List<Tuple<string, string>> polygon1 = new List<Tuple<string, string>>();
+            polygon1.Add(new Tuple<string, string>("10.10", "11.11"));
+            polygon1.Add(new Tuple<string, string>("20.20", "22.22"));
+
+            List<Tuple<string, string>> polygon2 = new List<Tuple<string, string>>();
+            polygon2.Add(new Tuple<string, string>("100.100", "111.111"));
+            polygon2.Add(new Tuple<string, string>("200.200", "222.222"));
+
+            List<List<Tuple<string, string>>> polygons = new List<List<Tuple<string, string>>>() { polygon1,polygon2};
+            
+            generateRDFForCountryMasterData("USA","East Coast","Oregon","Portland","iso1111","iso2222","ENG" ,"http://google.com","http://google.com",DateTime.Now,DateTime.Now,polygons);
             generateRDFForCurrencyMasterData("GB","Pound","GBP");
-            generateRDFForStateMasterData("US","Oregon","Or",aliases,polygon);
-            generateRDFForCityMasterData("Portland", "PRT", "US","ORG","Portland City",12.12,13.13,aliases,polygon);
+            generateRDFForStateMasterData("US","Oregon","Or",aliases,polygon1);
+            generateRDFForCityMasterData("Portland", "PRT", "US","ORG","Portland City",12.12,13.13,aliases,polygon1);
             Console.ReadLine();
         }
 
@@ -36,7 +43,7 @@ namespace Clarifi.ContentManagement.RDF
                                                             string intermediateRegionName, string isoCode2,
                                                             string isoCode3, string language, string flagUrl,string iconUrl,
                                                             DateTime addedDate,DateTime modifiedDate,
-                                                            List<Tuple<string, string>> polygon)
+                                                            List<List<Tuple<string, string>>> polygons)
         {
             //const string BASE_URI_COUNTRY = "http://tavisca.org/Models/Country";
 
@@ -50,7 +57,7 @@ namespace Clarifi.ContentManagement.RDF
             IUriNode pIntermediateRegionName = g.CreateUriNode("clarifi:Name");
             IUriNode pISOCode2 = g.CreateUriNode("clarifi:IsoCode");
             IUriNode pISOCode3 = g.CreateUriNode("clarifi:IsoCode");        
-            IUriNode pPolygon = g.CreateUriNode("clarifi:Polygon");
+            IUriNode pPolygons = g.CreateUriNode("clarifi:PolygonsList");
             IUriNode pLanguage = g.CreateUriNode("clarifi:LanguageCode");
             IUriNode pFlag = g.CreateUriNode("clarifi:Flag");
             IUriNode pIcon = g.CreateUriNode("clarifi:Icon");
@@ -69,8 +76,16 @@ namespace Clarifi.ContentManagement.RDF
             ILiteralNode vAddedDate = g.CreateLiteralNode(addedDate.ToString());
             ILiteralNode vModifiedDate = g.CreateLiteralNode(modifiedDate.ToString());
 
+            //IBlankNode bPolygons = g.CreateBlankNode("Polygons");
 
-            IBlankNode bPolygon = g.CreateBlankNode("Polygon");
+            //Create a list of geo-codes for a polygon
+            INode polygonsRoot = g.AssertList(new List<INode>() { getRDFForPolygon(polygons[0], g, g.CreateBlankNode("Polygon1")) });
+
+            
+            for (int i=1;i<polygons.Count;i++)
+            {
+                g.AddToList(polygonsRoot, new List<INode>() { getRDFForPolygon(polygons[i], g, g.CreateBlankNode("Polygon" + (i+1))) });
+            }
 
             g.Assert(new Triple(countryNode, pName, vName));
             g.Assert(new Triple(countryNode, pRegionName, vRegionName));
@@ -83,30 +98,32 @@ namespace Clarifi.ContentManagement.RDF
             g.Assert(new Triple(countryNode, pIcon, vIcon));
             g.Assert(new Triple(countryNode, pAddedDate, vAddedDate));
             g.Assert(new Triple(countryNode, pModifiedDate, vModifiedDate));
+            g.Assert(new Triple(countryNode, pPolygons, polygonsRoot));
 
-            //Create a list of geo-codes for a polygon
-            g.Assert(new Triple(countryNode, pPolygon, getRDFForPolygon(polygon,g,bPolygon)));
             RdfXmlWriter rdfxmlwriter = new RdfXmlWriter();
             rdfxmlwriter.Save(g, @"C:\Users\arsalang\Desktop\CountryMaster.rdf");
         }
 
         public static IBlankNode getRDFForPolygon(List<Tuple<string, string>> polygon, Graph g,IBlankNode bPolygon)
         {
-            IUriNode pGeoCode = g.CreateUriNode("clarifi:GeoCode");
+            IUriNode pGeoCodeList = g.CreateUriNode("clarifi:GeoCodeList");
             IUriNode pLat = g.CreateUriNode("clarifi:Lat");
             IUriNode pLong = g.CreateUriNode("clarifi:Long");
             if (polygon!=null && polygon.Count > 0)
             {
-                int count = 1;
-                Dictionary<string, IBlankNode> coordinatesNameDictionary = new Dictionary<string, IBlankNode>();
-                foreach (var coordinates in polygon)
+                IBlankNode bGeoCode= g.CreateBlankNode();
+                g.Assert(bGeoCode, pLat, g.CreateLiteralNode(polygon.FirstOrDefault().Item1));
+                g.Assert(bGeoCode, pLong, g.CreateLiteralNode(polygon.FirstOrDefault().Item2));
+                INode coordinatesRoot = g.AssertList(new List<INode>() { bGeoCode });
+
+                for (int i = 1; i < polygon.Count; i++)
                 {
-                    coordinatesNameDictionary.Add("GeoCode" + count.ToString(), g.CreateBlankNode("GeoCodes" + count));
-                    g.Assert(bPolygon, pGeoCode, coordinatesNameDictionary["GeoCode" + count.ToString()]);
-                    g.Assert(coordinatesNameDictionary["GeoCode" + count.ToString()], pLat, g.CreateLiteralNode(coordinates.Item1));
-                    g.Assert(coordinatesNameDictionary["GeoCode" + count.ToString()], pLong, g.CreateLiteralNode(coordinates.Item2));
-                    count++;
+                    bGeoCode = g.CreateBlankNode();
+                    g.Assert(bGeoCode, pLat, g.CreateLiteralNode(polygon[i].Item1));
+                    g.Assert(bGeoCode, pLong, g.CreateLiteralNode(polygon[i].Item2));
+                    g.AddToList(coordinatesRoot, new List<INode>() { bGeoCode });   
                 }
+                g.Assert(bPolygon, pGeoCodeList, coordinatesRoot);
             }
             return bPolygon;
         }
